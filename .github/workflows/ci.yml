@@ -8,12 +8,11 @@ on:
 
 jobs:
   backend:
-    name: Backend (FastAPI + LangGraph)
+    name: Backend – Lint & Import Check
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -24,49 +23,61 @@ jobs:
         run: |
           cd backend
           pip install -r requirements.txt
+          pip install ruff
+
+      - name: Lint backend
+        run: |
+          cd backend
+          ruff app
 
       - name: Backend import check (CI-safe)
         run: |
           cd backend
           python - <<EOF
           from app.graph.graph import graph
-          print("LangGraph compiled OK")
+          print("Backend graph import OK")
           EOF
 
-
   tools:
-    name: Tools (FastMCP)
+    name: Tools – Lint & Import Check
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
       - name: Install tools deps
         run: |
-            cd tools
-            pip install -r requirements.txt
+          cd tools
+          pip install -r requirements.txt
+          pip install ruff
+
+      - name: Lint tools
+        run: |
+          cd tools
+          ruff .
 
       - name: Tools import check
         run: |
-            cd tools
-            python - <<EOF
-            import server
-            print("FastMCP tools import OK")
-            EOF
-
+          cd tools
+          python - <<EOF
+          import server
+          print("FastMCP tools import OK")
+          EOF
 
   frontend:
-    name: Frontend (Next.js AGUI)
+    name: Frontend – Build
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
         with:
           node-version: "20"
 
@@ -79,23 +90,3 @@ jobs:
         run: |
           cd frontend
           npm run build
-
-  docker:
-  name: Docker – Build Images
-  runs-on: ubuntu-latest
-  needs: [backend, tools, frontend]
-
-  steps:
-    - uses: actions/checkout@v4
-
-    - name: Enable BuildKit
-      run: |
-        echo "DOCKER_BUILDKIT=1" >> $GITHUB_ENV
-        echo "COMPOSE_DOCKER_CLI_BUILD=1" >> $GITHUB_ENV
-
-    - name: Pull base images first (avoid parallel pulls)
-      run: |
-        docker pull python:3.11
-
-    - name: Docker compose build
-      run: docker compose build --progress=plain
