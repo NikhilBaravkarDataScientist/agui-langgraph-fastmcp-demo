@@ -1,0 +1,13 @@
+services:
+  tools:
+    build: ./tools
+    ports: ["3333:3333"]
+
+  backend:
+    build: ./backend
+    ports: ["8000:8000"]
+    depends_on: [tools]
+
+  frontend:
+    build: ./frontend
+    ports: ["3000:3000"]
