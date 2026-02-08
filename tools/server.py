@@ -1,5 +1,4 @@
 from fastmcp import FastMCP
-from tools import search_docs
 
 mcp = FastMCP("tools")
 
