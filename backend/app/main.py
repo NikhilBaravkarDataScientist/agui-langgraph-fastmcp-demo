@@ -1,10 +1,10 @@
 from fastapi import FastAPI, WebSocket
-from app.graph.graph import graph
-print("LangGraph compiled OK")
 
+from app.graph.graph import graph
 from app.utils.streaming import stream_graph
 
 app = FastAPI()
+
 
 @app.websocket("/ws/chat")
 async def chat(ws: WebSocket):
