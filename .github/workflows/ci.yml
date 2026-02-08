@@ -1,0 +1,91 @@
+name: AGUI LangGraph FastMCP CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  backend:
+    name: Backend (FastAPI + LangGraph)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install backend deps
+        run: |
+          cd backend
+          pip install -r requirements.txt
+
+      - name: Import check
+        run: |
+          cd backend
+          python - <<EOF
+          from app.main import app
+          from app.graph.graph import graph
+          print("Backend imports OK")
+          EOF
+
+  tools:
+    name: Tools (FastMCP)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install tools deps
+        run: |
+          cd tools
+          pip install -r requirements.txt
+
+      - name: Import check
+        run: |
+          cd tools
+          python - <<EOF
+          from server import app
+          print("FastMCP tools OK")
+          EOF
+
+  frontend:
+    name: Frontend (Next.js AGUI)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install frontend deps
+        run: |
+          cd frontend
+          npm install
+
+      - name: Build frontend
+        run: |
+          cd frontend
+          npm run build
+
+  docker:
+    name: Docker Compose Build
+    runs-on: ubuntu-latest
+    needs: [backend, tools, frontend]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Docker build
+        run: docker-compose build
