@@ -81,13 +81,21 @@ jobs:
           npm run build
 
   docker:
-    name: Docker Compose Build
-    runs-on: ubuntu-latest
-    needs: [backend, tools, frontend]
+  name: Docker – Build Images
+  runs-on: ubuntu-latest
+  needs: [backend, tools, frontend]
 
-    steps:
-      - uses: actions/checkout@v4
+  steps:
+    - uses: actions/checkout@v4
 
-      - name: Docker compose build
-        run: docker compose build
+    - name: Enable BuildKit
+      run: |
+        echo "DOCKER_BUILDKIT=1" >> $GITHUB_ENV
+        echo "COMPOSE_DOCKER_CLI_BUILD=1" >> $GITHUB_ENV
 
+    - name: Pull base images first (avoid parallel pulls)
+      run: |
+        docker pull python:3.11
+
+    - name: Docker compose build
+      run: docker compose build --progress=plain
