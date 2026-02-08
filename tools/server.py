@@ -1,10 +1,14 @@
 from fastmcp import FastMCP
-from tools import echo
 
 app = FastMCP()
+
 
 @app.tool()
 def echo(text: str):
     return {"echo": text}
 
-app.run(port=3333)
+
+if __name__ == "__main__":
+    # Run HTTP server ONLY when executed directly
+    app.run(port=3333)
+
