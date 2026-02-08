@@ -1,9 +1,25 @@
 services:
   backend:
-    build: ./backend
-    ports: ["8000:8000"]
-    depends_on: [tools]
+    build:
+      context: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    depends_on:
+      - tools
+
+  tools:
+    build:
+      context: ./tools
+    ports:
+      - "9000:9000"
 
   frontend:
-    build: ./frontend
-    ports: ["3000:3000"]
+    build:
+      context: ./frontend   # 👈 MUST point to folder with Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+

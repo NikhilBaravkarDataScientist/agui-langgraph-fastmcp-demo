@@ -1,14 +1,13 @@
 from fastmcp import FastMCP
+from tools import search_docs
 
-app = FastMCP()
+mcp = FastMCP("tools")
 
-
-@app.tool()
-def echo(text: str):
-    return {"echo": text}
-
+@mcp.tool()
+def search_docs(query: str) -> str:
+    """Search internal docs"""
+    from tools import search_docs as search_func
+    return search_func(query)
 
 if __name__ == "__main__":
-    # Run HTTP server ONLY when executed directly
-    app.run(port=3333)
-
+    mcp.run(transport="sse", host="0.0.0.0", port=9000)
