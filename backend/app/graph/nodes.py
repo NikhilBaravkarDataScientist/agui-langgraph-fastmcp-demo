@@ -1,6 +1,6 @@
-from app.llm.openai import llm
-from app.mcp.client import mcp_client
 from app.llm.openai import get_llm
+from app.mcp.client import mcp_client
+
 
 def llm_node(state):
     llm = get_llm()
@@ -8,6 +8,7 @@ def llm_node(state):
     return {
         "messages": state["messages"] + [("assistant", response.content)]
     }
+
 
 def tool_node(state):
     last = state["messages"][-1][1]

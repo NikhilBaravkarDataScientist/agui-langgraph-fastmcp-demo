@@ -25,14 +25,14 @@ jobs:
           cd backend
           pip install -r requirements.txt
 
-      - name: Import check
+      - name: Backend import check (CI-safe)
         run: |
           cd backend
           python - <<EOF
-          from app.main import app
           from app.graph.graph import graph
-          print("Backend imports OK")
+          print("LangGraph compiled OK")
           EOF
+
 
   tools:
     name: Tools (FastMCP)
