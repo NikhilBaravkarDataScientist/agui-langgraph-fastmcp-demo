@@ -1,6 +1,7 @@
 "use client"
 import { useState, useEffect } from "react"
-import { connect } from "@/lib/websocket"
+import { connect } from "../lib/websocket"
+
 
 export default function Chat() {
   const [messages, setMessages] = useState<string[]>([])

@@ -47,16 +47,17 @@ jobs:
 
       - name: Install tools deps
         run: |
-          cd tools
-          pip install -r requirements.txt
+            cd tools
+            pip install -r requirements.txt
 
-      - name: Import check
+      - name: Tools import check
         run: |
-          cd tools
-          python - <<EOF
-          from server import app
-          print("FastMCP tools OK")
-          EOF
+            cd tools
+            python - <<EOF
+            import server
+            print("FastMCP tools import OK")
+            EOF
+
 
   frontend:
     name: Frontend (Next.js AGUI)

@@ -1,5 +1,7 @@
 from fastapi import FastAPI, WebSocket
 from app.graph.graph import graph
+print("LangGraph compiled OK")
+
 from app.utils.streaming import stream_graph
 
 app = FastAPI()
