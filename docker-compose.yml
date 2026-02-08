@@ -1,8 +1,4 @@
 services:
-  tools:
-    build: ./tools
-    ports: ["3333:3333"]
-
   backend:
     build: ./backend
     ports: ["8000:8000"]
