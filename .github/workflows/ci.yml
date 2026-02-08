@@ -27,8 +27,9 @@ jobs:
 
       - name: Lint backend
         run: |
-          cd backend
-          ruff app
+            cd backend
+            ruff check app
+
 
       - name: Backend import check (CI-safe)
         run: |
@@ -59,7 +60,7 @@ jobs:
       - name: Lint tools
         run: |
           cd tools
-          ruff .
+          ruff check .
 
       - name: Tools import check
         run: |
