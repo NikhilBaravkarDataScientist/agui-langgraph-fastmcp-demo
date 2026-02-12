@@ -4,21 +4,21 @@ Short demo project integrating an assistant GUI (AGUI) with LangGraph orchestrat
 Replace this description with a concise summary of what this demo shows and the problem it solves.
 
 ## Table of contents
-- Project overview
-- Features
-- Repo structure
-- Tech stack
-- Prerequisites
-- Quick start (local)
-  - Backend
-  - Frontend
-- Environment variables
-- Usage examples
-- Development
-- Tests
-- Contributing
-- License
-- Contact
+- [Project overview](#project-overview)
+- [Features](#features)
+- [Repository structure](#repository-structure)
+- [Tech stack](#tech-stack)
+- [Prerequisites](#prerequisites)
+- [Quick start (local)](#quick-start-local)
+  - [Backend](#backend-example)
+  - [Frontend](#frontend-example)
+- [Environment variables](#environment-variables)
+- [Usage examples](#usage-examples)
+- [Development](#development)
+- [Tests](#tests)
+- [Contributing](#contributing)
+- [License](#license)
+- [Contact](#contact)
 
 ## Project overview
 This repository is a demonstration that showcases how to wire together:
