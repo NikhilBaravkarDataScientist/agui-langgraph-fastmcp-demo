@@ -98,7 +98,7 @@ Open your browser at http://localhost:3000 (or whatever port your frontend uses)
 ## Environment variables
 Create `.env` files in `backend/` and `frontend/` as needed. Example variables (replace with your actual names):
 
-backend/.env
+### backend/.env
 ```
 OPENAI_API_KEY=sk-...
 LANGGRAPH_ENDPOINT=http://localhost:8001
@@ -106,7 +106,7 @@ FASTMCP_API_KEY=...
 BACKEND_PORT=8000
 ```
 
-frontend/.env
+### frontend/.env
 ```
 VITE_API_BASE=http://localhost:8000
 VITE_MAPBOX_KEY=...
