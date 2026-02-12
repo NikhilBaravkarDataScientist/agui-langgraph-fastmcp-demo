@@ -10,8 +10,8 @@ Replace this description with a concise summary of what this demo shows and the 
 - [Tech stack](#tech-stack)
 - [Prerequisites](#prerequisites)
 - [Quick start (local)](#quick-start-local)
-  - [Backend](#backend-example)
-  - [Frontend](#frontend-example)
+  - [Backend example](#backend-example)
+  - [Frontend example](#frontend-example)
 - [Environment variables](#environment-variables)
 - [Usage examples](#usage-examples)
 - [Development](#development)
@@ -61,7 +61,7 @@ git clone https://github.com/NikhilBaravkarDataScientist/agui-langgraph-fastmcp-
 cd agui-langgraph-fastmcp-demo
 ```
 
-Backend (example)
+### Backend example
 ```
 # move into backend directory
 cd backend
@@ -78,7 +78,7 @@ pip install -r requirements.txt
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Frontend (example)
+### Frontend example
 ```
 cd frontend
 
