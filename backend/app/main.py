@@ -3,10 +3,11 @@ import logging
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from langchain_core.messages import HumanMessage, AIMessage
 
 from app.graph.graph import graph
-from app.utils.memory import get_messages, save_message
-from app.utils.streaming import stream_graph
+from app.utils.memory import get_messages, save_messages
+from app.utils.streaming import WebSocketStreamingHandler
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -36,47 +37,56 @@ async def chat(ws: WebSocket):
     await ws.accept()
     session_id = str(uuid4())
     logger.info(f"New chat session: {session_id}")
-    
-    state = {
-        "session_id": session_id,
-        "messages": get_messages(session_id),
-        "events": []
-    }
 
     try:
         while True:
             data = await ws.receive_text()
-            logger.info(f"Session {session_id}: Received message: {data[:50]}...")
-            
-            # Save user message
-            save_message(session_id, "user", data)
-            state["messages"] = get_messages(session_id)
-            before_count = len(state["messages"])
+            logger.info(f"Session {session_id}: Received: {data[:50]}...")
 
-            # Stream graph events
+            # Build state: history + new user message
+            history = get_messages(session_id)
+            user_msg = HumanMessage(content=data)
+
+            state = {
+                "session_id": session_id,
+                "messages": history + [user_msg],
+                "events": [],
+            }
+
+            handler = WebSocketStreamingHandler(ws)
+
             try:
-                async for event in stream_graph(graph, state):
-                    await ws.send_json(event)
-            except Exception as e:
-                logger.error(f"Error streaming graph for session {session_id}: {e}")
-                await ws.send_json({
-                    "type": "error",
-                    "content": "An error occurred while processing your request"
-                })
+                result = await graph.ainvoke(
+                    state,
+                    config={"callbacks": [handler], "recursion_limit": 25},
+                )
 
-            # Save assistant messages and send any that weren't already streamed
-            updated_messages = state.get("messages", [])
-            if len(updated_messages) > before_count:
-                for role, content in updated_messages[before_count:]:
-                    save_message(session_id, role, content)
-                    # Send the full response as a token if it's from assistant
-                    if role == "assistant":
-                        logger.info(f"Session {session_id}: Sending assistant response")
-                        await ws.send_json({
-                            "type": "message_complete",
-                            "content": content
-                        })
-                    
+                # Persist full conversation (including tool messages)
+                save_messages(session_id, result["messages"])
+
+                # Send the final assistant reply
+                for msg in reversed(result["messages"]):
+                    if (
+                        isinstance(msg, AIMessage)
+                        and msg.content
+                        and not getattr(msg, "tool_calls", None)
+                    ):
+                        await ws.send_json(
+                            {"type": "message_complete", "content": msg.content}
+                        )
+                        break
+
+            except Exception as e:
+                logger.error(
+                    f"Error in graph for session {session_id}: {e}", exc_info=True
+                )
+                await ws.send_json(
+                    {
+                        "type": "error",
+                        "content": "An error occurred while processing your request",
+                    }
+                )
+
     except WebSocketDisconnect:
         logger.info(f"Session {session_id}: Client disconnected")
     except Exception as e:

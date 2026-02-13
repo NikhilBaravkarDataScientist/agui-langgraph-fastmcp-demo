@@ -13,6 +13,7 @@ def get_llm():
             )
         _llm = ChatOpenAI(
             model="gpt-4o-mini",
-            temperature=0
+            temperature=0,
+            streaming=True,
         )
     return _llm

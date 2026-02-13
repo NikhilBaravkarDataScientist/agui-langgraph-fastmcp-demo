@@ -1,8 +1,8 @@
-from typing import TypedDict, List, Tuple, Any
+from typing import TypedDict, Annotated
+from langgraph.graph.message import add_messages
 
 
 class AgentState(TypedDict):
     session_id: str
-    messages: List[Tuple[str, str]]
-    tool_result: Any
+    messages: Annotated[list, add_messages]
     events: list

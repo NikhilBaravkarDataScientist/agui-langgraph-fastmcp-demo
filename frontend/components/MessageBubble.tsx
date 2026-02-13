@@ -1,3 +1,5 @@
+import React from "react"
+
 type MessageRole = "user" | "assistant"
 
 type BarChartSpec = {
@@ -266,6 +268,119 @@ function OpenJsonUi({ spec }: { spec: OpenJsonUiNode | OpenJsonUiNode[] }) {
 	return <div className="space-y-3">{renderUiNode(spec)}</div>
 }
 
+// Image extensions to detect bare image URLs
+const IMAGE_EXTENSIONS = /\.(jpg|jpeg|png|gif|webp|svg|bmp|tiff)(\?[^\s)]*)?$/i
+
+/**
+ * Lightweight markdown renderer that handles:
+ * - ![alt](url) → <img>
+ * - [text](url) → <a>
+ * - **bold** → <strong>
+ * - Bare image URLs → <img>
+ * - Newlines → <br>
+ */
+function RichText({ text, isUser }: { text: string; isUser: boolean }) {
+	const elements: React.ReactNode[] = []
+	// Split into lines first to handle newlines
+	const lines = text.split("\n")
+
+	lines.forEach((line, lineIdx) => {
+		if (lineIdx > 0) {
+			elements.push(<br key={`br-${lineIdx}`} />)
+		}
+
+		// Combined regex for markdown images, markdown links, bold text, and bare URLs
+		const tokenRegex =
+			/!\[([^\]]*)\]\(([^)]+)\)|\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*|(https?:\/\/[^\s<>"{}|\\^`]+)/g
+
+		let lastIndex = 0
+		let match: RegExpExecArray | null
+
+		while ((match = tokenRegex.exec(line)) !== null) {
+			// Push any preceding plain text
+			if (match.index > lastIndex) {
+				elements.push(
+					<React.Fragment key={`t-${lineIdx}-${lastIndex}`}>
+						{line.slice(lastIndex, match.index)}
+					</React.Fragment>
+				)
+			}
+
+			if (match[1] !== undefined && match[2]) {
+				// Markdown image: ![alt](url)
+				elements.push(
+					<img
+						key={`img-${lineIdx}-${match.index}`}
+						src={match[2]}
+						alt={match[1] || "image"}
+						className="max-w-full rounded-lg my-2 shadow-md"
+						style={{ maxHeight: "400px", objectFit: "contain" }}
+						loading="lazy"
+					/>
+				)
+			} else if (match[3] !== undefined && match[4]) {
+				// Markdown link: [text](url)
+				elements.push(
+					<a
+						key={`a-${lineIdx}-${match.index}`}
+						href={match[4]}
+						target="_blank"
+						rel="noopener noreferrer"
+						className={`underline ${isUser ? "text-blue-200" : "text-blue-600 hover:text-blue-800"}`}
+					>
+						{match[3]}
+					</a>
+				)
+			} else if (match[5] !== undefined) {
+				// Bold: **text**
+				elements.push(
+					<strong key={`b-${lineIdx}-${match.index}`}>{match[5]}</strong>
+				)
+			} else if (match[6]) {
+				// Bare URL — render as image if it looks like one, otherwise as a link
+				const url = match[6]
+				if (IMAGE_EXTENSIONS.test(url)) {
+					elements.push(
+						<img
+							key={`bimg-${lineIdx}-${match.index}`}
+							src={url}
+							alt="image"
+							className="max-w-full rounded-lg my-2 shadow-md"
+							style={{ maxHeight: "400px", objectFit: "contain" }}
+							loading="lazy"
+						/>
+					)
+				} else {
+					elements.push(
+						<a
+							key={`ba-${lineIdx}-${match.index}`}
+							href={url}
+							target="_blank"
+							rel="noopener noreferrer"
+							className={`underline break-all ${isUser ? "text-blue-200" : "text-blue-600 hover:text-blue-800"}`}
+						>
+							{url}
+						</a>
+					)
+				}
+			}
+
+			lastIndex = match.index + match[0].length
+		}
+
+		// Push remaining plain text
+		if (lastIndex < line.length) {
+			elements.push(
+				<React.Fragment key={`t-${lineIdx}-${lastIndex}`}>
+					{line.slice(lastIndex)}
+				</React.Fragment>
+			)
+		}
+	})
+
+	return <div className="whitespace-pre-wrap">{elements}</div>
+}
+
 export default function MessageBubble({
 	role,
 	content,
@@ -274,15 +389,16 @@ export default function MessageBubble({
 	content: string
 }) {
 	const parsed = parseContent(content)
+	const isUser = role === "user"
 	return (
 		<div
 			className={`max-w-2xl rounded-lg px-4 py-2 ${
-				role === "user"
+				isUser
 					? "bg-blue-500 text-white"
 					: "bg-white text-gray-900 border border-gray-200"
 			}`}
 		>
-			{parsed.text && <p className="whitespace-pre-wrap">{parsed.text}</p>}
+			{parsed.text && <RichText text={parsed.text} isUser={isUser} />}
 			{parsed.ui && <OpenJsonUi spec={parsed.ui} />}
 			{parsed.chart && <BarChart spec={parsed.chart} />}
 			{parsed.lineChart && <LineChart spec={parsed.lineChart} />}

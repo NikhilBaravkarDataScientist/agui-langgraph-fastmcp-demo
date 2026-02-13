@@ -1,84 +1,109 @@
+import json
+from typing import Optional
+
+from langchain_core.tools import tool
+from langchain_core.messages import SystemMessage
+
 from app.llm.openai import get_llm
 from app.mcp.client import mcp_client
-from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+
+
+# --------------- LangChain tool wrappers (call tools server via REST) --------
+
+@tool
+def get_apod(date: Optional[str] = None) -> str:
+    """Get NASA's Astronomy Picture of the Day (APOD).
+
+    Args:
+        date: Optional date in YYYY-MM-DD format. If not provided, returns today's APOD.
+    """
+    args = {}
+    if date:
+        args["date"] = date
+    return json.dumps(mcp_client.call("get_apod", args))
+
+
+@tool
+def get_mars_rover_photos(
+    sol: int = 1000, camera: str = "all", rover: str = "curiosity"
+) -> str:
+    """Get photos from Mars Rovers (Curiosity, Opportunity, Spirit).
+
+    Args:
+        sol: Martian sol (day) number. Default is 1000.
+        camera: Camera name - FHAZ, RHAZ, MAST, CHEMCAM, MAHLI, MARDI, NAVCAM, PANCAM, MINITES, or 'all'.
+        rover: Rover name - curiosity, opportunity, or spirit.
+    """
+    return json.dumps(
+        mcp_client.call(
+            "get_mars_rover_photos",
+            {"sol": sol, "camera": camera, "rover": rover},
+        )
+    )
+
+
+@tool
+def get_neo_feed(
+    start_date: Optional[str] = None, end_date: Optional[str] = None
+) -> str:
+    """Get Near Earth Objects (asteroids) data from NASA.
+
+    Args:
+        start_date: Optional start date in YYYY-MM-DD format.
+        end_date: Optional end date in YYYY-MM-DD format (max 7 days from start_date).
+    """
+    args = {}
+    if start_date:
+        args["start_date"] = start_date
+    if end_date:
+        args["end_date"] = end_date
+    return json.dumps(mcp_client.call("get_neo_feed", args))
+
+
+@tool
+def search_nasa_images(query: str, media_type: str = "image") -> str:
+    """Search NASA's Image and Video Library.
+
+    Args:
+        query: Search query (e.g., 'Mars', 'Moon landing', 'Hubble', 'ISS').
+        media_type: Type of media - image, video, or audio. Default is 'image'.
+    """
+    return json.dumps(
+        mcp_client.call(
+            "search_nasa_images",
+            {"query": query, "media_type": media_type},
+        )
+    )
+
+
+nasa_tools = [get_apod, get_mars_rover_photos, get_neo_feed, search_nasa_images]
+
+# --------------- System prompt ------------------------------------------------
+
+SYSTEM_PROMPT = (
+    "You are a NASA Space Exploration Assistant with access to real NASA APIs. "
+    "You have the following tools:\n"
+    "- get_apod: Get the Astronomy Picture of the Day\n"
+    "- get_mars_rover_photos: Fetch photos from Mars Rovers (Curiosity, Opportunity, Spirit)\n"
+    "- get_neo_feed: Get Near Earth Object (asteroid) data\n"
+    "- search_nasa_images: Search NASA's image and video library\n\n"
+    "IMPORTANT RULES:\n"
+    "1. When users ask about space topics, ALWAYS call the appropriate tool to fetch real data. "
+    "Do NOT make up information.\n"
+    "2. When tool results contain image URLs (img_src, url, hdurl, thumbnail), "
+    "ALWAYS display them as markdown images: ![description](url)\n"
+    "   Example: ![Mars Rover Photo](http://mars.jpl.nasa.gov/image.jpg)\n"
+    "3. Be enthusiastic about space exploration!\n"
+    "4. If the user requests a chart, include an open-json-ui code block.\n"
+)
+
+# --------------- Graph nodes --------------------------------------------------
 
 
 def llm_node(state):
-    """LLM node that processes messages and returns AI response"""
-    llm = get_llm()
-
-    last_user_message = ""
-    for role, content in reversed(state["messages"]):
-        if role == "user":
-            last_user_message = content
-            break
-
-    needs_ui = any(
-        keyword in last_user_message.lower()
-        for keyword in ["bar chart", "chart", "graph", "plot"]
-    )
-    
-    # Convert tuple messages to LangChain message objects
-    messages = []
-    
-    # Add space exploration system prompt
-    messages.append(SystemMessage(
-        content=(
-            "You are a NASA Space Exploration Assistant. You have access to real NASA APIs to help users explore space. "
-            "You can:\n"
-            "- Get the Astronomy Picture of the Day (APOD)\n"
-            "- Fetch photos from Mars Rovers (Curiosity, Opportunity, Spirit)\n"
-            "- Get information about Near Earth Objects (asteroids)\n"
-            "- Search NASA's image and video library\n\n"
-            "When users ask about space, planets, astronomy, Mars, asteroids, or NASA missions, "
-            "use the appropriate NASA API tools to provide accurate, up-to-date information. "
-            "Always be enthusiastic about space exploration and help users discover the wonders of our universe!"
-        )
-    ))
-    
-    if needs_ui:
-        messages.append(SystemMessage(
-            content=(
-                "If the user requests a chart and provides data, include an "
-                "Open-JSON-UI block in the response. Use a fenced code block "
-                "with the language tag open-json-ui and a bar_chart node. "
-                "Example: ```open-json-ui {\"type\":\"bar_chart\",\"labels\":[...]," 
-                "\"values\":[...]} ```. If data is missing, ask the user to provide it."
-            )
-        ))
-    
-    for role, content in state["messages"]:
-        if role == "user":
-            messages.append(HumanMessage(content=content))
-        elif role == "assistant":
-            messages.append(AIMessage(content=content))
-    
-    # Call the LLM 
-    response = llm.invoke(messages)
-    
-    # Extract the content from the response
-    content = response.content if hasattr(response, "content") else str(response)
-    
-    return {
-        "messages": state["messages"] + [("assistant", content)]
-    }
-
-
-def tool_node(state):
-    last = state["messages"][-1][1]
-
-    state.setdefault("events", []).append({
-        "type": "tool_start",
-        "tool": "echo",
-        "args": {"text": last}
-    })
-
-    result = mcp_client.call("echo", {"text": last})
-
-    state.setdefault("events", []).append({
-        "type": "tool_end",
-        "tool": "echo",
-        "result": result
-    })
-
-    return {"tool_result": result}
+    """LLM node – calls the model with tools bound."""
+    llm = get_llm().bind_tools(nasa_tools)
+    # Prepend system prompt (not stored in conversation state)
+    all_messages = [SystemMessage(content=SYSTEM_PROMPT)] + state["messages"]
+    response = llm.invoke(all_messages)
+    return {"messages": [response]}

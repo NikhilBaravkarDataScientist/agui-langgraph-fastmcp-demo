@@ -1,57 +1,54 @@
+import json
 import logging
+from langchain_core.callbacks import AsyncCallbackHandler
 
 logger = logging.getLogger(__name__)
 
 
-async def stream_graph(graph, state):
-    """Stream events from the LangGraph computation"""
-    try:
-        async for event in graph.astream_events(state, version="v2"):
+class WebSocketStreamingHandler(AsyncCallbackHandler):
+    """Callback handler that streams LLM tokens and tool events to a WebSocket."""
+
+    def __init__(self, websocket):
+        super().__init__()
+        self.websocket = websocket
+        self._tool_runs: dict = {}  # run_id -> tool_name
+
+    # ---- LLM token streaming -------------------------------------------------
+
+    async def on_llm_new_token(self, token: str, **kwargs):
+        """Forward each generated token to the frontend."""
+        if token:
             try:
-                if event["event"] == "on_llm_stream":
-                    chunk = event.get("data", {}).get("chunk")
-                    if chunk and hasattr(chunk, "content") and chunk.content:
-                        yield {
-                            "type": "token",
-                            "content": chunk.content
-                        }
-                elif event["event"] == "on_chain_end":
-                    data = event.get("data", {})
-                    output = data.get("output")
-
-                    if output and isinstance(output, dict) and "messages" in output:
-                        # Keep the latest graph state so the caller can persist it.
-                        state["messages"] = output["messages"]
-                        
-                elif event["event"] == "on_tool_start":
-                    tool_name = event.get("name", "unknown")
-                    tool_input = event.get("data", {}).get("input")
-                    yield {
-                        "type": "tool_start",
-                        "tool": tool_name,
-                        "args": tool_input
-                    }
-                elif event["event"] == "on_tool_end":
-                    tool_name = event.get("name", "unknown")
-                    tool_output = event.get("data", {}).get("output")
-                    yield {
-                        "type": "tool_end",
-                        "tool": tool_name,
-                        "result": tool_output
-                    }
+                await self.websocket.send_json(
+                    {"type": "token", "content": token}
+                )
             except Exception as e:
-                logger.error(f"Error processing graph event: {e}", exc_info=True)
-                continue
+                logger.error(f"Error streaming token: {e}")
 
-        # Yield any buffered tool events from state
-        for tool_event in state.get("events", []):
-            yield tool_event
+    # ---- Tool lifecycle ------------------------------------------------------
 
-        state["events"] = []
+    async def on_tool_start(self, serialized, input_str, *, run_id, **kwargs):
+        tool_name = serialized.get("name", "unknown")
+        self._tool_runs[run_id] = tool_name
+        try:
+            args = input_str
+            if isinstance(input_str, str):
+                try:
+                    args = json.loads(input_str)
+                except (json.JSONDecodeError, TypeError):
+                    pass
+            await self.websocket.send_json(
+                {"type": "tool_start", "tool": tool_name, "args": args}
+            )
+        except Exception as e:
+            logger.error(f"Error sending tool_start: {e}")
 
-    except Exception as e:
-        logger.error(f"Error streaming from graph: {e}", exc_info=True)
-        yield {
-            "type": "error",
-            "content": "An error occurred while processing your request"
-        }
+    async def on_tool_end(self, output, *, run_id, **kwargs):
+        tool_name = self._tool_runs.pop(run_id, "unknown")
+        try:
+            result = str(output) if output else ""
+            await self.websocket.send_json(
+                {"type": "tool_end", "tool": tool_name, "result": result}
+            )
+        except Exception as e:
+            logger.error(f"Error sending tool_end: {e}")
