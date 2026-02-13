@@ -104,11 +104,17 @@ export default function Chat() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
+    <div className="flex flex-col h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3 shadow-sm">
+      <div className="bg-gradient-to-r from-indigo-900 via-purple-900 to-pink-900 border-b border-gray-700 px-4 py-3 shadow-lg">
         <div className="max-w-4xl mx-auto flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">AGUI Chat</h1>
+          <div className="flex items-center gap-3">
+            <span className="text-3xl">🚀</span>
+            <div>
+              <h1 className="text-2xl font-bold text-white">NASA Space Explorer</h1>
+              <p className="text-xs text-gray-300">Powered by NASA APIs</p>
+            </div>
+          </div>
           <div className="flex items-center gap-2">
             <div
               className={`w-3 h-3 rounded-full ${
@@ -119,7 +125,7 @@ export default function Chat() {
                   : "bg-red-500"
               }`}
             />
-            <span className="text-sm text-gray-600 capitalize">{connectionStatus}</span>
+            <span className="text-sm text-gray-300 capitalize">{connectionStatus}</span>
           </div>
         </div>
       </div>
@@ -128,9 +134,16 @@ export default function Chat() {
       <div className="flex-1 overflow-y-auto px-4 py-6">
         <div className="max-w-4xl mx-auto space-y-4">
           {messages.length === 0 && (
-            <div className="text-center text-gray-500 py-12">
-              <p className="text-lg">Start a conversation</p>
-              <p className="text-sm">Type a message and press Enter to begin</p>
+            <div className="text-center text-gray-300 py-12">
+              <div className="text-6xl mb-4">🌌</div>
+              <p className="text-lg font-semibold mb-2">Welcome to NASA Space Explorer!</p>
+              <p className="text-sm mb-4">Ask me about space exploration, astronomy, Mars rovers, and more!</p>
+              <div className="text-xs text-gray-400 space-y-1">
+                <p>Try: "Show me today's astronomy picture"</p>
+                <p>Try: "Get photos from Mars Curiosity rover"</p>
+                <p>Try: "Are there any asteroids near Earth?"</p>
+                <p>Try: "Search for images of the Hubble telescope"</p>
+              </div>
             </div>
           )}
 
@@ -172,7 +185,7 @@ export default function Chat() {
       )}
 
       {/* Input */}
-      <div className="bg-white border-t border-gray-200 px-4 py-4">
+      <div className="bg-gray-800 border-t border-gray-700 px-4 py-4">
         <div className="max-w-4xl mx-auto flex gap-2">
           <input
             value={input}
@@ -184,16 +197,16 @@ export default function Chat() {
                 ? "Connecting..."
                 : isLoading
                 ? "Processing..."
-                : "Type your message..."
+                : "Ask about space exploration, NASA missions, Mars, asteroids..."
             }
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+            className="flex-1 px-4 py-2 border border-gray-600 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-800 disabled:cursor-not-allowed"
           />
           <button
             onClick={handleSend}
             disabled={isLoading || !input.trim() || connectionStatus !== "connected"}
-            className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+            className="px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed transition-all"
           >
-            {isLoading ? "..." : "Send"}
+            {isLoading ? "..." : "🚀 Send"}
           </button>
         </div>
       </div>

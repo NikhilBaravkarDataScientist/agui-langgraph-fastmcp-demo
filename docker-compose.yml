@@ -6,6 +6,7 @@ services:
       - "8000:8000"
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - NASA_API_KEY=${NASA_API_KEY:-DEMO_KEY}
     depends_on:
       - tools
 
@@ -14,6 +15,8 @@ services:
       context: ./tools
     ports:
       - "9000:9000"
+    environment:
+      - NASA_API_KEY=${NASA_API_KEY:-DEMO_KEY}
 
   frontend:
     build:
