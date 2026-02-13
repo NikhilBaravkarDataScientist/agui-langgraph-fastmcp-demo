@@ -1,6 +1,6 @@
 import os
 import requests
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional
 
 
 def get_nasa_api_key() -> str:
