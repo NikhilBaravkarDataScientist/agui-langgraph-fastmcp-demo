@@ -20,6 +20,22 @@ def llm_node(state):
     
     # Convert tuple messages to LangChain message objects
     messages = []
+    
+    # Add space exploration system prompt
+    messages.append(SystemMessage(
+        content=(
+            "You are a NASA Space Exploration Assistant. You have access to real NASA APIs to help users explore space. "
+            "You can:\n"
+            "- Get the Astronomy Picture of the Day (APOD)\n"
+            "- Fetch photos from Mars Rovers (Curiosity, Opportunity, Spirit)\n"
+            "- Get information about Near Earth Objects (asteroids)\n"
+            "- Search NASA's image and video library\n\n"
+            "When users ask about space, planets, astronomy, Mars, asteroids, or NASA missions, "
+            "use the appropriate NASA API tools to provide accurate, up-to-date information. "
+            "Always be enthusiastic about space exploration and help users discover the wonders of our universe!"
+        )
+    ))
+    
     if needs_ui:
         messages.append(SystemMessage(
             content=(
@@ -30,6 +46,7 @@ def llm_node(state):
                 "\"values\":[...]} ```. If data is missing, ask the user to provide it."
             )
         ))
+    
     for role, content in state["messages"]:
         if role == "user":
             messages.append(HumanMessage(content=content))
